@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>F1 Saison-Tipp – Drag & Drop</title>
+  <style>
+    :root{
+      --bg:#0b0d12;--panel:#121622;--panel2:#0f1320;--text:#e9ecf1;--muted:#9aa4b2;
+      --line:#243048;--accent:#7aa2ff;--ok:#22c55e;--warn:#f59e0b;--bad:#ef4444;
+      --radius:18px;
+      --shadow:0 18px 60px rgba(0,0,0,.35);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:radial-gradient(1200px 600px at 20% 0%, rgba(122,162,255,.22), transparent 60%), var(--bg);color:var(--text)}
+
+    header{padding:22px 18px 8px;max-width:1200px;margin:0 auto}
+    h1{margin:0;font-size:20px;font-weight:700;letter-spacing:.2px}
+    .sub{margin-top:6px;color:var(--muted);font-size:13px;line-height:1.45}
+
+    .wrap{max-width:1200px;margin:0 auto;padding:14px 18px 28px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+    @media (max-width: 980px){ .grid{grid-template-columns:1fr} }
+
+    .panel{background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+    .panel .hd{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:14px 14px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.02)}
+    .panel .hd .title{display:flex;flex-direction:column;gap:2px}
+    .panel .hd .title b{font-size:14px}
+    .panel .hd .title span{font-size:12px;color:var(--muted)}
+
+    .btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    button{
+      appearance:none;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);
+      padding:8px 10px;border-radius:12px;font-size:12px;cursor:pointer
+    }
+    button:hover{border-color:rgba(122,162,255,.55)}
+    button.primary{border-color:rgba(122,162,255,.65);background:rgba(122,162,255,.18)}
+    button.danger{border-color:rgba(239,68,68,.55);background:rgba(239,68,68,.12)}
+
+    .content{padding:12px 12px 14px}
+
+    .helper{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:10px}
+    .badge{font-size:12px;color:var(--muted)}
+    .badge strong{color:var(--text)}
+    .search{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    input[type="text"]{
+      width:min(420px, 100%);padding:9px 10px;border-radius:12px;border:1px solid var(--line);
+      background:rgba(0,0,0,.25);color:var(--text);outline:none
+    }
+    input[type="text"]:focus{border-color:rgba(122,162,255,.6)}
+
+    .slots{display:flex;flex-direction:column;gap:8px}
+    .slot{
+      background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      border:1px dashed rgba(154,164,178,.35);
+      border-radius:16px;
+      padding:10px;
+      display:flex;align-items:center;gap:10px
+    }
+    .slot[data-highlight="1"]{border-color:rgba(122,162,255,.85);box-shadow:0 0 0 3px rgba(122,162,255,.12) inset}
+
+    .pos{
+      width:32px;height:32px;border-radius:12px;background:rgba(122,162,255,.12);
+      border:1px solid rgba(122,162,255,.35);display:flex;align-items:center;justify-content:center;
+      font-weight:700;font-size:12px;color:var(--text);flex:0 0 auto
+    }
+
+    .dropzone{flex:1;min-height:32px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .placeholder{color:var(--muted);font-size:12px}
+
+    .chip{
+      display:inline-flex;align-items:center;gap:8px;
+      background:rgba(255,255,255,.04);border:1px solid var(--line);
+      padding:7px 10px;border-radius:999px;cursor:grab;user-select:none
+    }
+    .chip:active{cursor:grabbing}
+    .chip .dot{width:10px;height:10px;border-radius:50%}
+    .chip .name{font-weight:650;font-size:12px}
+    .chip .team{font-size:11px;color:var(--muted)}
+
+    .chip.disabled{opacity:.42;cursor:not-allowed}
+
+    .miniBtns{display:flex;gap:6px;align-items:center;flex:0 0 auto}
+    .iconBtn{padding:6px 8px;border-radius:12px;font-size:12px}
+
+    .teams{display:flex;flex-direction:column;gap:10px}
+    .teamCard{background:rgba(0,0,0,.18);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+    .teamCard .thd{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 10px;border-bottom:1px solid rgba(36,48,72,.6)}
+    .teamName{display:flex;gap:10px;align-items:center}
+    .swatch{width:12px;height:12px;border-radius:4px;border:1px solid rgba(255,255,255,.22)}
+    .teamName b{font-size:13px}
+    .teamCount{font-size:12px;color:var(--muted)}
+    .teamBody{padding:10px;display:flex;flex-wrap:wrap;gap:8px}
+
+    .footerNote{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.5}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>F1 Saison-Tipp – Drag & Drop</h1>
+    <div class="sub">
+      Zieh Fahrer <b>rechts</b> aus den Teams in die <b>linken</b> Plätze (1–22). Ein Fahrer kann nur einmal getippt werden.
+      Du kannst einen gesetzten Fahrer per <b>✕</b> wieder entfernen oder Slots gegeneinander tauschen (drag & drop).
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="grid">
+      <!-- LEFT: Ranking -->
+      <section class="panel" id="rankingPanel">
+        <div class="hd">
+          <div class="title">
+            <b>Dein Tipp (Platz 1–22)</b>
+            <span>Ziehe Fahrer in die Slots – Reihenfolge = Endstand</span>
+          </div>
+          <div class="btns">
+            <button class="primary" id="btnSaveImage">Bild speichern</button>
+            <button class="primary" id="btnShareMail">Per Mail teilen</button>
+            <button class="danger" id="btnClear">Alles löschen</button>
+          </div>
+        </div>
+
+        <div class="content">
+          <div class="helper">
+            <div class="badge">Belegt: <strong id="filledCount">0</strong> / 22</div>
+            <div class="badge">Ungetippt: <strong id="unpickedCount">0</strong></div>
+          </div>
+          <div class="slots" id="slots"></div>
+          <div class="footerNote">
+            Tipp: Du kannst auch <b>Slot → Slot</b> ziehen, um zwei Plätze schnell zu tauschen.
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT: Drivers by team -->
+      <section class="panel" id="driversPanel">
+        <div class="hd">
+          <div class="title">
+            <b>Fahrer nach Teams</b>
+            <span>Suche + Drag & Drop in deinen Tipp</span>
+          </div>
+          <div class="btns">
+            <button id="btnResetData" title="Setzt nur die Fahrer-/Team-Daten auf Standard zurück">Daten-Reset</button>
+          </div>
+        </div>
+
+        <div class="content">
+          <div class="helper">
+            <div class="search">
+              <input id="search" type="text" placeholder="Suche Fahrer oder Team…" autocomplete="off" />
+            </div>
+            <div class="footerNote" style="margin:0">
+              Daten sind im Code unten leicht anpassbar (<code>SEED_TEAMS</code>). Quelle: Wikipedia „Formel-1-Weltmeisterschaft 2026“ → „Teams und Fahrer“.
+            </div>
+          </div>
+          <div class="teams" id="teams"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    /**********************
+     * 1) Daten (2026)
+     **********************/
+    const SEED_TEAMS = [
+      { name: "McLaren", color: "#ff8700", drivers: [
+        { id: "NOR", name: "Lando Norris" },
+        { id: "PIA", name: "Oscar Piastri" },
+      ]},
+      { name: "Mercedes", color: "#00d2be", drivers: [
+        { id: "RUS", name: "George Russell" },
+        { id: "ANT", name: "Andrea Kimi Antonelli" },
+      ]},
+      { name: "Red Bull Racing", color: "#3671c6", drivers: [
+        { id: "VER", name: "Max Verstappen" },
+        { id: "HAD", name: "Isack Hadjar" },
+      ]},
+      { name: "Ferrari", color: "#e10600", drivers: [
+        { id: "LEC", name: "Charles Leclerc" },
+        { id: "HAM", name: "Lewis Hamilton" },
+      ]},
+      { name: "Williams", color: "#64c4ff", drivers: [
+        { id: "ALB", name: "Alexander Albon" },
+        { id: "SAI", name: "Carlos Sainz jr." },
+      ]},
+      { name: "Racing Bulls", color: "#2b4562", drivers: [
+        { id: "LIN", name: "Arvid Lindblad" },
+        { id: "LAW", name: "Liam Lawson" },
+      ]},
+      { name: "Aston Martin", color: "#006f62", drivers: [
+        { id: "STR", name: "Lance Stroll" },
+        { id: "ALO", name: "Fernando Alonso" },
+      ]},
+      { name: "Haas", color: "#b6babd", drivers: [
+        { id: "OCO", name: "Esteban Ocon" },
+        { id: "BEA", name: "Oliver Bearman" },
+      ]},
+      { name: "Audi", color: "#c9ccd3", drivers: [
+        { id: "HUL", name: "Nico Hülkenberg" },
+        { id: "BOR", name: "Gabriel Bortoleto" },
+      ]},
+      { name: "Alpine", color: "#0090ff", drivers: [
+        { id: "GAS", name: "Pierre Gasly" },
+        { id: "COL", name: "Franco Colapinto" },
+      ]},
+      { name: "Cadillac", color: "#8b8f99", drivers: [
+        { id: "PER", name: "Sergio Pérez" },
+        { id: "BOT", name: "Valtteri Bottas" },
+      ]},
+    ];
+
+    /**********************
+     * 2) State + Storage
+     **********************/
+    const STORAGE_KEY = "f1-season-tip-v2";
+
+    let state = loadState() ?? {
+      teams: structuredClone(SEED_TEAMS),
+      picks: Array.from({length: 22}, () => null),
+    };
+
+    function loadState(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(!raw) return null;
+        const parsed = JSON.parse(raw);
+        if(!parsed || !Array.isArray(parsed.picks) || !Array.isArray(parsed.teams)) return null;
+        parsed.picks = [...parsed.picks.slice(0,22), ...Array.from({length: Math.max(0, 22 - parsed.picks.length)}, () => null)];
+        return parsed;
+      }catch{ return null; }
+    }
+
+    function saveState(){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    /**********************
+     * 3) Helpers
+     **********************/
+    function allDrivers(){
+      return state.teams.flatMap(t => t.drivers.map(d => ({...d, team: t.name, color: t.color})));
+    }
+
+    function driverById(id){
+      return allDrivers().find(d => d.id === id) || null;
+    }
+
+    function pickedSet(){
+      return new Set(state.picks.filter(Boolean));
+    }
+
+    function countFilled(){
+      return state.picks.filter(Boolean).length;
+    }
+
+    function unpickedCount(){
+      return allDrivers().filter(d => !pickedSet().has(d.id)).length;
+    }
+
+    function sanitizeTeams(teams){
+      const used = new Set();
+      for (const t of teams){
+        t.name = String(t.name ?? "").trim() || "Team";
+        t.color = String(t.color ?? "#7aa2ff");
+        t.drivers = Array.isArray(t.drivers) ? t.drivers : [];
+        t.drivers = t.drivers.map(d => ({ id: String(d.id ?? "").trim(), name: String(d.name ?? "").trim() }))
+          .filter(d => d.id && d.name && !used.has(d.id) && (used.add(d.id), true));
+      }
+      return teams;
+    }
+
+    /**********************
+     * 4) Rendering
+     **********************/
+    const elSlots = document.getElementById('slots');
+    const elTeams = document.getElementById('teams');
+    const elFilledCount = document.getElementById('filledCount');
+    const elUnpickedCount = document.getElementById('unpickedCount');
+    const elSearch = document.getElementById('search');
+
+    function render(){
+      renderSlots();
+      renderTeams();
+      renderCounters();
+      saveState();
+    }
+
+    function renderCounters(){
+      elFilledCount.textContent = String(countFilled());
+      elUnpickedCount.textContent = String(unpickedCount());
+    }
+
+    function renderSlots(){
+      elSlots.innerHTML = '';
+      for(let i=0;i<22;i++){
+        const slot = document.createElement('div');
+        slot.className = 'slot';
+        slot.dataset.slotIndex = String(i);
+
+        slot.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          slot.dataset.highlight = '1';
+        });
+        slot.addEventListener('dragleave', () => slot.dataset.highlight = '0');
+        slot.addEventListener('drop', (e) => {
+          e.preventDefault();
+          slot.dataset.highlight = '0';
+          const payload = safeParse(e.dataTransfer.getData('application/json'));
+          if(!payload) return;
+          handleDropOnSlot(i, payload);
+        });
+
+        const pos = document.createElement('div');
+        pos.className = 'pos';
+        pos.textContent = String(i+1);
+
+        const dz = document.createElement('div');
+        dz.className = 'dropzone';
+
+        const driverId = state.picks[i];
+        if(!driverId){
+          const ph = document.createElement('div');
+          ph.className = 'placeholder';
+          ph.textContent = 'Fahrer hier ablegen';
+          dz.appendChild(ph);
+        } else {
+          const d = driverById(driverId);
+          dz.appendChild(makeChip(d, { draggable:true, from:'slot', slotIndex:i }));
+
+          const mini = document.createElement('div');
+          mini.className = 'miniBtns';
+          const rm = document.createElement('button');
+          rm.className = 'iconBtn';
+          rm.textContent = '✕';
+          rm.title = 'Fahrer entfernen';
+          rm.addEventListener('click', () => {
+            state.picks[i] = null;
+            render();
+          });
+          mini.appendChild(rm);
+          dz.appendChild(mini);
+        }
+
+        slot.appendChild(pos);
+        slot.appendChild(dz);
+        elSlots.appendChild(slot);
+      }
+    }
+
+    function renderTeams(){
+      const q = (elSearch.value || '').trim().toLowerCase();
+      const picked = pickedSet();
+
+      elTeams.innerHTML = '';
+      for(const team of state.teams){
+        const drivers = team.drivers
+          .map(d => ({...d, team: team.name, color: team.color}))
+          .filter(d => {
+            if(!q) return true;
+            return d.name.toLowerCase().includes(q) || team.name.toLowerCase().includes(q) || d.id.toLowerCase().includes(q);
+          });
+
+        if(q && drivers.length === 0) continue;
+
+        const card = document.createElement('div');
+        card.className = 'teamCard';
+
+        const thd = document.createElement('div');
+        thd.className = 'thd';
+
+        const nameWrap = document.createElement('div');
+        nameWrap.className = 'teamName';
+        const sw = document.createElement('div');
+        sw.className = 'swatch';
+        sw.style.background = team.color;
+        const b = document.createElement('b');
+        b.textContent = team.name;
+        nameWrap.appendChild(sw);
+        nameWrap.appendChild(b);
+
+        const cnt = document.createElement('div');
+        cnt.className = 'teamCount';
+        cnt.textContent = `${drivers.length} Fahrer`;
+
+        thd.appendChild(nameWrap);
+        thd.appendChild(cnt);
+
+        const body = document.createElement('div');
+        body.className = 'teamBody';
+
+        for(const d of drivers){
+          const chip = makeChip(d, { draggable: !picked.has(d.id), from:'pool' });
+          if(picked.has(d.id)) chip.classList.add('disabled');
+          body.appendChild(chip);
+        }
+
+        card.appendChild(thd);
+        card.appendChild(body);
+        elTeams.appendChild(card);
+      }
+    }
+
+    function makeChip(driver, opts){
+      const chip = document.createElement('div');
+      chip.className = 'chip';
+      chip.draggable = !!opts.draggable;
+      chip.dataset.driverId = driver?.id ?? '';
+
+      if(opts.from === 'slot'){
+        chip.dataset.from = 'slot';
+        chip.dataset.slotIndex = String(opts.slotIndex);
+      } else {
+        chip.dataset.from = 'pool';
+      }
+
+      const dot = document.createElement('span');
+      dot.className = 'dot';
+      dot.style.background = driver?.color ?? '#7aa2ff';
+
+      const name = document.createElement('span');
+      name.className = 'name';
+      name.textContent = driver?.name ?? 'Unbekannt';
+
+      const team = document.createElement('span');
+      team.className = 'team';
+      team.textContent = driver?.team ?? '';
+
+      chip.appendChild(dot);
+      chip.appendChild(name);
+      chip.appendChild(team);
+
+      chip.addEventListener('dragstart', (e) => {
+        if(!chip.draggable) return;
+        const payload = {
+          type: 'driver',
+          id: chip.dataset.driverId,
+          from: chip.dataset.from,
+          slotIndex: chip.dataset.slotIndex ? Number(chip.dataset.slotIndex) : null,
+        };
+        e.dataTransfer.setData('application/json', JSON.stringify(payload));
+        e.dataTransfer.effectAllowed = 'move';
+      });
+
+      return chip;
+    }
+
+    function safeParse(str){
+      try{ return JSON.parse(str); } catch { return null; }
+    }
+
+    /**********************
+     * 5) Drag & Drop Logic
+     **********************/
+    function handleDropOnSlot(targetIndex, payload){
+      if(payload?.type !== 'driver') return;
+      const driverId = payload.id;
+      if(!driverById(driverId)) return;
+
+      if(payload.from === 'pool'){
+        if(pickedSet().has(driverId)) return;
+        state.picks[targetIndex] = driverId;
+        render();
+        return;
+      }
+
+      if(payload.from === 'slot'){
+        const fromIndex = Number(payload.slotIndex);
+        if(Number.isNaN(fromIndex) || fromIndex < 0 || fromIndex > 21) return;
+        if(fromIndex === targetIndex) return;
+
+        const a = state.picks[fromIndex];
+        const b = state.picks[targetIndex];
+        state.picks[targetIndex] = a;
+        state.picks[fromIndex] = b;
+        render();
+        return;
+      }
+    }
+
+    /**********************
+     * 6) Bild erstellen + Mail teilen (iOS)
+     **********************/
+    function roundRect(ctx, x, y, w, h, r){
+      const rr = Math.min(r, w/2, h/2);
+      ctx.beginPath();
+      ctx.moveTo(x+rr, y);
+      ctx.arcTo(x+w, y, x+w, y+h, rr);
+      ctx.arcTo(x+w, y+h, x, y+h, rr);
+      ctx.arcTo(x, y+h, x, y, rr);
+      ctx.arcTo(x, y, x+w, y, rr);
+      ctx.closePath();
+      return ctx;
+    }
+
+    function buildTipCanvas(){
+      const picks = state.picks.map((id, idx) => ({ pos: idx + 1, driver: id ? driverById(id) : null }));
+      const title = "F1 Saison-Tipp (1–22)";
+      const date = new Date();
+      const dateStr = date.toLocaleString(undefined, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+      const W = 1000;
+      const pad = 34;
+      const rowH = 44;
+      const headerH = 120;
+      const H = headerH + pad + rowH * 22 + pad;
+
+      const c = document.createElement('canvas');
+      c.width = W;
+      c.height = H;
+      const ctx = c.getContext('2d');
+
+      ctx.fillStyle = '#0b0d12';
+      ctx.fillRect(0,0,W,H);
+
+      const cardX = 24, cardY = 24, cardW = W - 48, cardH = H - 48;
+      ctx.fillStyle = '#121622';
+      roundRect(ctx, cardX, cardY, cardW, cardH, 22); ctx.fill();
+      ctx.strokeStyle = '#243048'; ctx.lineWidth = 2;
+      roundRect(ctx, cardX, cardY, cardW, cardH, 22); ctx.stroke();
+
+      ctx.fillStyle = '#e9ecf1';
+      ctx.font = '700 30px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
+      ctx.fillText(title, cardX + pad, cardY + 56);
+
+      ctx.fillStyle = '#9aa4b2';
+      ctx.font = '500 16px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
+      ctx.fillText(`Stand: ${dateStr}`, cardX + pad, cardY + 84);
+      ctx.fillText(`Belegt: ${countFilled()} / 22`, cardX + pad, cardY + 108);
+
+      let y = cardY + headerH;
+      for (const r of picks){
+        const rowX = cardX + pad;
+        const rowW = cardW - pad*2;
+        const rowY = y;
+        const rowH2 = rowH - 6;
+
+        ctx.fillStyle = '#0f1320';
+        roundRect(ctx, rowX, rowY, rowW, rowH2, 14); ctx.fill();
+        ctx.strokeStyle = 'rgba(36,48,72,.95)'; ctx.lineWidth = 1;
+        roundRect(ctx, rowX, rowY, rowW, rowH2, 14); ctx.stroke();
+
+        const pillX = rowX + 12;
+        const pillY = rowY + 10;
+
+        ctx.fillStyle = 'rgba(122,162,255,.18)';
+        roundRect(ctx, pillX, pillY, 48, 24, 10); ctx.fill();
+        ctx.strokeStyle = 'rgba(122,162,255,.45)';
+        roundRect(ctx, pillX, pillY, 48, 24, 10); ctx.stroke();
+
+        ctx.fillStyle = '#e9ecf1';
+        ctx.font = '750 14px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
+        ctx.fillText(String(r.pos), pillX + 17, pillY + 17);
+
+        if(r.driver){
+          ctx.fillStyle = r.driver.color || '#7aa2ff';
+          ctx.beginPath(); ctx.arc(pillX + 74, pillY + 12, 7, 0, Math.PI*2); ctx.fill();
+
+          ctx.fillStyle = '#e9ecf1';
+          ctx.font = '650 16px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
+          ctx.fillText(r.driver.name, pillX + 92, pillY + 17);
+
+          ctx.fillStyle = '#9aa4b2';
+          ctx.font = '500 13px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
+          ctx.fillText(r.driver.team, pillX + 92, pillY + 35);
+        } else {
+          ctx.fillStyle = '#9aa4b2';
+          ctx.font = '650 16px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
+          ctx.fillText('—', pillX + 92, pillY + 17);
+        }
+
+        y += rowH;
+      }
+
+      ctx.fillStyle = '#9aa4b2';
+      ctx.font = '500 12px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
+      ctx.fillText('Erstellt mit dem F1 Saison-Tipp Tool', cardX + pad, cardY + cardH - 18);
+
+      return c;
+    }
+
+    async function canvasToBlob(canvas){
+      return await new Promise((resolve) => canvas.toBlob(resolve, 'image/png', 0.92));
+    }
+
+    async function saveTipImage(){
+      const canvas = buildTipCanvas();
+      const blob = await canvasToBlob(canvas);
+      if(!blob){ alert('Konnte Bild nicht erzeugen.'); return; }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const stamp = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+      a.href = url;
+      a.download = `f1-tip-${stamp}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    }
+
+    async function shareTipImageViaMail(){
+      const canvas = buildTipCanvas();
+      const blob = await canvasToBlob(canvas);
+      if(!blob){ alert('Konnte Bild nicht erzeugen.'); return; }
+
+      const file = new File([blob], 'f1-tip.png', { type: 'image/png' });
+      const text = 'Bitte an lacsap@hymail.net senden.';
+
+      // iOS Share Sheet (Mail als Ziel möglich, Anhang wird übergeben)
+      if(navigator.canShare && navigator.canShare({ files: [file] })){
+        try{
+          await navigator.share({ title: 'F1 Saison-Tipp', text, files: [file] });
+          return;
+        }catch(_){ /* abgebrochen */ }
+      }
+
+      // Fallback: speichern + Mailto öffnen (Anhang manuell)
+      await saveTipImage();
+      const subject = encodeURIComponent('F1 Saison-Tipp (PNG)');
+      const body = encodeURIComponent('Hi!\n\nIm Anhang ist mein F1 Saison-Tipp als PNG.\n\nViele Grüße');
+      window.location.href = `mailto:lacsap@hymail.net?subject=${subject}&body=${body}`;
+    }
+
+    document.getElementById('btnSaveImage').addEventListener('click', saveTipImage);
+    document.getElementById('btnShareMail').addEventListener('click', shareTipImageViaMail);
+
+    document.getElementById('btnClear').addEventListener('click', () => {
+      if(!confirm('Wirklich alle Tipps (1–22) löschen?')) return;
+      state.picks = Array.from({length:22}, () => null);
+      render();
+    });
+
+    document.getElementById('btnResetData').addEventListener('click', () => {
+      if(!confirm('Fahrer-/Team-Daten auf Standard zurücksetzen? (Deine Tipps bleiben erhalten, ungültige IDs werden entfernt.)')) return;
+      const teams = structuredClone(SEED_TEAMS);
+      const validIds = new Set(teams.flatMap(t => t.drivers.map(d => d.id)));
+      state.teams = teams;
+      state.picks = state.picks.map(x => (validIds.has(x) ? x : null));
+      const seen = new Set();
+      state.picks = state.picks.map(x => {
+        if(!x) return null;
+        if(seen.has(x)) return null;
+        seen.add(x);
+        return x;
+      });
+      render();
+    });
+
+    /**********************
+     * 7) Init
+     **********************/
+    elSearch.addEventListener('input', () => renderTeams());
+    state.teams = sanitizeTeams(state.teams);
+    render();
+  </script>
+</body>
+</html>
