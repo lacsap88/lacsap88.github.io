@@ -7,15 +7,16 @@
   <style>
     :root{
       --bg:#0b0d12;--panel:#121622;--panel2:#0f1320;--text:#e9ecf1;--muted:#9aa4b2;
-      --line:#243048;--accent:#7aa2ff;--ok:#22c55e;--warn:#f59e0b;--bad:#ef4444;
+      --line:#243048;--accent:#7aa2ff;--shadow:0 18px 60px rgba(0,0,0,.35);
       --radius:18px;
-      --shadow:0 18px 60px rgba(0,0,0,.35);
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
     }
     *{box-sizing:border-box}
     body{margin:0;background:radial-gradient(1200px 600px at 20% 0%, rgba(122,162,255,.22), transparent 60%), var(--bg);color:var(--text)}
 
     header{padding:22px 18px 8px;max-width:1200px;margin:0 auto}
+    .brandRow{display:flex;gap:12px;align-items:flex-start}
+    .f1Logo{width:72px;height:22px;object-fit:contain;opacity:.95;margin-top:2px;filter:drop-shadow(0 6px 18px rgba(0,0,0,.35))}
     h1{margin:0;font-size:20px;font-weight:700;letter-spacing:.2px}
     .sub{margin-top:6px;color:var(--muted);font-size:13px;line-height:1.45}
 
@@ -50,6 +51,7 @@
     }
     input[type="text"]:focus{border-color:rgba(122,162,255,.6)}
 
+    /* Left: slots */
     .slots{display:flex;flex-direction:column;gap:8px}
     .slot{
       background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
@@ -76,14 +78,16 @@
     }
     .chip:active{cursor:grabbing}
     .chip .dot{width:10px;height:10px;border-radius:50%}
+    .chip .nameRow{display:inline-flex;gap:8px;align-items:center}
     .chip .name{font-weight:650;font-size:12px}
-    .chip .team{font-size:11px;color:var(--muted)}
+    .chip .team{font-size:11px;color:var(--muted);margin-left:6px}
 
     .chip.disabled{opacity:.42;cursor:not-allowed}
 
     .miniBtns{display:flex;gap:6px;align-items:center;flex:0 0 auto}
     .iconBtn{padding:6px 8px;border-radius:12px;font-size:12px}
 
+    /* Right: teams */
     .teams{display:flex;flex-direction:column;gap:10px}
     .teamCard{background:rgba(0,0,0,.18);border:1px solid var(--line);border-radius:16px;overflow:hidden}
     .teamCard .thd{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 10px;border-bottom:1px solid rgba(36,48,72,.6)}
@@ -94,14 +98,24 @@
     .teamBody{padding:10px;display:flex;flex-wrap:wrap;gap:8px}
 
     .footerNote{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.5}
+
+    /* Logos */
+    .tlogo{width:16px;height:16px;object-fit:contain;border-radius:4px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.22)}
+    .tlogo.big{width:18px;height:18px;border-radius:6px}
+
   </style>
 </head>
 <body>
   <header>
-    <h1>F1 Saison-Tipp – Drag & Drop</h1>
-    <div class="sub">
-      Zieh Fahrer <b>rechts</b> aus den Teams in die <b>linken</b> Plätze (1–22). Ein Fahrer kann nur einmal getippt werden.
-      Du kannst einen gesetzten Fahrer per <b>✕</b> wieder entfernen oder Slots gegeneinander tauschen (drag & drop).
+    <div class="brandRow">
+      <img class="f1Logo" alt="F1" src="https://commons.wikimedia.org/wiki/Special:FilePath/F1%20(white).svg" />
+      <div>
+        <h1>F1 Saison-Tipp – Drag &amp; Drop</h1>
+        <div class="sub">
+          Zieh Fahrer <b>rechts</b> aus den Teams in die <b>linken</b> Plätze (1–22). Ein Fahrer kann nur einmal getippt werden.
+          Du kannst einen gesetzten Fahrer per <b>✕</b> wieder entfernen oder Slots gegeneinander tauschen (drag &amp; drop).
+        </div>
+      </div>
     </div>
   </header>
 
@@ -141,7 +155,7 @@
             <span>Suche + Drag & Drop in deinen Tipp</span>
           </div>
           <div class="btns">
-            <button id="btnResetData" title="Setzt nur die Fahrer-/Team-Daten auf Standard zurück">Daten-Reset</button>
+            <button id="btnResetData" title="Setzt die Fahrer-/Team-Daten auf Standard zurück (deine Tipps bleiben, ungültige IDs werden entfernt)">Daten-Reset</button>
           </div>
         </div>
 
@@ -150,9 +164,7 @@
             <div class="search">
               <input id="search" type="text" placeholder="Suche Fahrer oder Team…" autocomplete="off" />
             </div>
-            <div class="footerNote" style="margin:0">
-              Daten sind im Code unten leicht anpassbar (<code>SEED_TEAMS</code>). Quelle: Wikipedia „Formel-1-Weltmeisterschaft 2026“ → „Teams und Fahrer“.
-            </div>
+            <div class="badge">Quelle: Wikipedia „Formel-1-Weltmeisterschaft 2026“ (Stammfahrer)</div>
           </div>
           <div class="teams" id="teams"></div>
         </div>
@@ -162,7 +174,7 @@
 
   <script>
     /**********************
-     * 1) Daten (2026)
+     * 1) Daten (Stammfahrer 2026, 22)
      **********************/
     const SEED_TEAMS = [
       { name: "McLaren", color: "#ff8700", drivers: [
@@ -212,7 +224,48 @@
     ];
 
     /**********************
-     * 2) State + Storage
+     * 2) Logos (Wikimedia) + Fallback
+     **********************/
+    const TEAM_LOGOS = {
+      "McLaren": "https://commons.wikimedia.org/wiki/Special:FilePath/McLaren%20Automotive%20logo.svg",
+      "Mercedes": "https://commons.wikimedia.org/wiki/Special:FilePath/Mercedes%20AMG%20Petronas%20F1%20Logo.svg",
+      "Red Bull Racing": "https://commons.wikimedia.org/wiki/Special:FilePath/Red%20Bull%20Racing%20-%202021%20Logo.svg",
+      "Ferrari": "https://commons.wikimedia.org/wiki/Special:FilePath/Ferrari%20wordmark.svg",
+      "Williams": "https://commons.wikimedia.org/wiki/Special:FilePath/Williams%20Racing%202022%20logo.svg",
+      "Aston Martin": "https://commons.wikimedia.org/wiki/Special:FilePath/Aston%20Martin%20F1%20Team%20logo%202024.jpg",
+      "Haas": "https://commons.wikimedia.org/wiki/Special:FilePath/Haas%20F1%20Team%20Logo.svg",
+      "Audi": "https://commons.wikimedia.org/wiki/Special:FilePath/Audif1.com%20logo17%20(cropped).svg",
+      "Alpine": "https://commons.wikimedia.org/wiki/Special:FilePath/Alpine%20F1%20Team%20Logo.svg",
+      "Cadillac": "https://commons.wikimedia.org/wiki/Special:FilePath/Cadillac%20Formula%201%20Team%20logo.png",
+      "Racing Bulls": "" // Fallback-Badge (Commons-Logo oft nicht frei/verlässlich)
+    };
+
+    function teamAbbr(teamName){
+      const parts = String(teamName||'').replace(/\s+/g,' ').trim().split(' ');
+      const a = (parts[0]?.[0] || 'T').toUpperCase();
+      const b = (parts[1]?.[0] || parts[0]?.[1] || 'M').toUpperCase();
+      return (a + b).slice(0,2);
+    }
+    function teamLogoUrl(teamName){ return TEAM_LOGOS[teamName] || ""; }
+    function teamLogoData(teamName, color){
+      const label = teamAbbr(teamName);
+      const fg = '#ffffff';
+      const bg = color || '#7aa2ff';
+      const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <rect x="3" y="3" width="58" height="58" rx="14" ry="14" fill="${bg}" fill-opacity="0.95"/>
+  <rect x="3" y="3" width="58" height="58" rx="14" ry="14" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="2"/>
+  <text x="32" y="40" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" font-size="22" font-weight="800" fill="${fg}">${label}</text>
+</svg>`;
+      return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    }
+    function getTeamLogoSrc(teamName, color){
+      const url = teamLogoUrl(teamName);
+      return url ? url : teamLogoData(teamName, color);
+    }
+
+    /**********************
+     * 3) State + Storage
      **********************/
     const STORAGE_KEY = "f1-season-tip-v2";
 
@@ -237,28 +290,23 @@
     }
 
     /**********************
-     * 3) Helpers
+     * 4) Helpers
      **********************/
     function allDrivers(){
       return state.teams.flatMap(t => t.drivers.map(d => ({...d, team: t.name, color: t.color})));
     }
-
     function driverById(id){
       return allDrivers().find(d => d.id === id) || null;
     }
-
     function pickedSet(){
       return new Set(state.picks.filter(Boolean));
     }
-
     function countFilled(){
       return state.picks.filter(Boolean).length;
     }
-
     function unpickedCount(){
       return allDrivers().filter(d => !pickedSet().has(d.id)).length;
     }
-
     function sanitizeTeams(teams){
       const used = new Set();
       for (const t of teams){
@@ -272,7 +320,7 @@
     }
 
     /**********************
-     * 4) Rendering
+     * 5) Rendering
      **********************/
     const elSlots = document.getElementById('slots');
     const elTeams = document.getElementById('teams');
@@ -299,10 +347,7 @@
         slot.className = 'slot';
         slot.dataset.slotIndex = String(i);
 
-        slot.addEventListener('dragover', (e) => {
-          e.preventDefault();
-          slot.dataset.highlight = '1';
-        });
+        slot.addEventListener('dragover', (e) => { e.preventDefault(); slot.dataset.highlight = '1'; });
         slot.addEventListener('dragleave', () => slot.dataset.highlight = '0');
         slot.addEventListener('drop', (e) => {
           e.preventDefault();
@@ -335,10 +380,7 @@
           rm.className = 'iconBtn';
           rm.textContent = '✕';
           rm.title = 'Fahrer entfernen';
-          rm.addEventListener('click', () => {
-            state.picks[i] = null;
-            render();
-          });
+          rm.addEventListener('click', () => { state.picks[i] = null; render(); });
           mini.appendChild(rm);
           dz.appendChild(mini);
         }
@@ -372,11 +414,21 @@
 
         const nameWrap = document.createElement('div');
         nameWrap.className = 'teamName';
+
+        const logo = document.createElement('img');
+        logo.className = 'tlogo big';
+        logo.alt = team.name;
+        logo.referrerPolicy = 'no-referrer';
+        logo.src = getTeamLogoSrc(team.name, team.color);
+
         const sw = document.createElement('div');
         sw.className = 'swatch';
         sw.style.background = team.color;
+
         const b = document.createElement('b');
         b.textContent = team.name;
+
+        nameWrap.appendChild(logo);
         nameWrap.appendChild(sw);
         nameWrap.appendChild(b);
 
@@ -419,6 +471,15 @@
       dot.className = 'dot';
       dot.style.background = driver?.color ?? '#7aa2ff';
 
+      const nameRow = document.createElement('span');
+      nameRow.className = 'nameRow';
+
+      const logo = document.createElement('img');
+      logo.className = 'tlogo';
+      logo.alt = driver?.team ?? '';
+      logo.referrerPolicy = 'no-referrer';
+      logo.src = getTeamLogoSrc(driver?.team ?? '', driver?.color ?? '#7aa2ff');
+
       const name = document.createElement('span');
       name.className = 'name';
       name.textContent = driver?.name ?? 'Unbekannt';
@@ -427,8 +488,11 @@
       team.className = 'team';
       team.textContent = driver?.team ?? '';
 
+      nameRow.appendChild(logo);
+      nameRow.appendChild(name);
+
       chip.appendChild(dot);
-      chip.appendChild(name);
+      chip.appendChild(nameRow);
       chip.appendChild(team);
 
       chip.addEventListener('dragstart', (e) => {
@@ -451,7 +515,7 @@
     }
 
     /**********************
-     * 5) Drag & Drop Logic
+     * 6) Drag & Drop Logic
      **********************/
     function handleDropOnSlot(targetIndex, payload){
       if(payload?.type !== 'driver') return;
@@ -475,12 +539,11 @@
         state.picks[targetIndex] = a;
         state.picks[fromIndex] = b;
         render();
-        return;
       }
     }
 
     /**********************
-     * 6) Bild erstellen + Mail teilen (iOS)
+     * 7) Bild speichern + Mail teilen (iOS)
      **********************/
     function roundRect(ctx, x, y, w, h, r){
       const rr = Math.min(r, w/2, h/2);
@@ -494,16 +557,26 @@
       return ctx;
     }
 
+    function fitText(ctx, text, maxWidth, base){
+      let size = base.size;
+      ctx.font = `${base.weight} ${size}px ${base.family}`;
+      while(ctx.measureText(text).width > maxWidth && size > 10){
+        size -= 1;
+        ctx.font = `${base.weight} ${size}px ${base.family}`;
+      }
+      return size;
+    }
+
     function buildTipCanvas(){
       const picks = state.picks.map((id, idx) => ({ pos: idx + 1, driver: id ? driverById(id) : null }));
       const title = "F1 Saison-Tipp (1–22)";
       const date = new Date();
       const dateStr = date.toLocaleString(undefined, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
 
-      const W = 1000;
+      const W = 1080;
       const pad = 34;
-      const rowH = 44;
-      const headerH = 120;
+      const rowH = 46;
+      const headerH = 132;
       const H = headerH + pad + rowH * 22 + pad;
 
       const c = document.createElement('canvas');
@@ -520,14 +593,20 @@
       ctx.strokeStyle = '#243048'; ctx.lineWidth = 2;
       roundRect(ctx, cardX, cardY, cardW, cardH, 22); ctx.stroke();
 
+      ctx.fillStyle = '#e10600';
+      roundRect(ctx, cardX + pad, cardY + 30, 10, 18, 4); ctx.fill();
       ctx.fillStyle = '#e9ecf1';
-      ctx.font = '700 30px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
-      ctx.fillText(title, cardX + pad, cardY + 56);
+      ctx.font = '800 26px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
+      ctx.fillText('F1', cardX + pad + 18, cardY + 46);
+
+      ctx.fillStyle = '#e9ecf1';
+      ctx.font = '700 28px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
+      ctx.fillText(title, cardX + pad + 60, cardY + 50);
 
       ctx.fillStyle = '#9aa4b2';
       ctx.font = '500 16px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
-      ctx.fillText(`Stand: ${dateStr}`, cardX + pad, cardY + 84);
-      ctx.fillText(`Belegt: ${countFilled()} / 22`, cardX + pad, cardY + 108);
+      ctx.fillText(`Stand: ${dateStr}`, cardX + pad + 60, cardY + 78);
+      ctx.fillText(`Belegt: ${countFilled()} / 22`, cardX + pad + 60, cardY + 102);
 
       let y = cardY + headerH;
       for (const r of picks){
@@ -550,20 +629,31 @@
         roundRect(ctx, pillX, pillY, 48, 24, 10); ctx.stroke();
 
         ctx.fillStyle = '#e9ecf1';
-        ctx.font = '750 14px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
+        ctx.font = '800 14px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
         ctx.fillText(String(r.pos), pillX + 17, pillY + 17);
 
         if(r.driver){
+          const badgeX = pillX + 72;
+          const badgeY = pillY + 3;
+          const badgeS = 18;
+
           ctx.fillStyle = r.driver.color || '#7aa2ff';
-          ctx.beginPath(); ctx.arc(pillX + 74, pillY + 12, 7, 0, Math.PI*2); ctx.fill();
+          roundRect(ctx, badgeX, badgeY, badgeS, badgeS, 5); ctx.fill();
+          ctx.strokeStyle = 'rgba(255,255,255,.22)';
+          roundRect(ctx, badgeX, badgeY, badgeS, badgeS, 5); ctx.stroke();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '900 10px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
+          ctx.fillText(teamAbbr(r.driver.team), badgeX + 3, badgeY + 13);
+
+          // Name + Team inline => kein Überlauf mehr
+          const textX = badgeX + badgeS + 10;
+          const maxTextW = rowX + rowW - textX - 12;
+          const label = `${r.driver.name}  ·  ${r.driver.team}`;
 
           ctx.fillStyle = '#e9ecf1';
-          ctx.font = '650 16px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
-          ctx.fillText(r.driver.name, pillX + 92, pillY + 17);
-
-          ctx.fillStyle = '#9aa4b2';
-          ctx.font = '500 13px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
-          ctx.fillText(r.driver.team, pillX + 92, pillY + 35);
+          fitText(ctx, label, maxTextW, { size: 16, weight: 650, family: 'system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial' });
+          ctx.fillText(label, textX, pillY + 17);
         } else {
           ctx.fillStyle = '#9aa4b2';
           ctx.font = '650 16px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
@@ -572,10 +662,6 @@
 
         y += rowH;
       }
-
-      ctx.fillStyle = '#9aa4b2';
-      ctx.font = '500 12px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
-      ctx.fillText('Erstellt mit dem F1 Saison-Tipp Tool', cardX + pad, cardY + cardH - 18);
 
       return c;
     }
@@ -605,23 +691,25 @@
       if(!blob){ alert('Konnte Bild nicht erzeugen.'); return; }
 
       const file = new File([blob], 'f1-tip.png', { type: 'image/png' });
-      const text = 'Bitte an lacsap@hymail.net senden.';
 
-      // iOS Share Sheet (Mail als Ziel möglich, Anhang wird übergeben)
+      // iOS Safari: Share Sheet → Mail
       if(navigator.canShare && navigator.canShare({ files: [file] })){
         try{
-          await navigator.share({ title: 'F1 Saison-Tipp', text, files: [file] });
+          await navigator.share({ title: 'F1 Saison-Tipp', files: [file] });
           return;
         }catch(_){ /* abgebrochen */ }
       }
 
-      // Fallback: speichern + Mailto öffnen (Anhang manuell)
+      // Fallback: Bild speichern + Mailto ohne Anhang
       await saveTipImage();
       const subject = encodeURIComponent('F1 Saison-Tipp (PNG)');
       const body = encodeURIComponent('Hi!\n\nIm Anhang ist mein F1 Saison-Tipp als PNG.\n\nViele Grüße');
       window.location.href = `mailto:lacsap@hymail.net?subject=${subject}&body=${body}`;
     }
 
+    /**********************
+     * 8) Buttons + Init
+     **********************/
     document.getElementById('btnSaveImage').addEventListener('click', saveTipImage);
     document.getElementById('btnShareMail').addEventListener('click', shareTipImageViaMail);
 
@@ -647,10 +735,8 @@
       render();
     });
 
-    /**********************
-     * 7) Init
-     **********************/
     elSearch.addEventListener('input', () => renderTeams());
+
     state.teams = sanitizeTeams(state.teams);
     render();
   </script>
